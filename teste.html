@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador 3D de Pisos e Paredes</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+    #icone-sidebar {
+      position: absolute; top: 10px; left: 20px;
+      background: none; border: none; font-size: 30px;
+      cursor: pointer; z-index: 2;
+    }
+    #icone-ajuda {
+      position: absolute; top: 10px; right: 20px;
+      background: none; border: none; font-size: 30px;
+      cursor: pointer; z-index: 2;
+    }
+    #sidebar {
+      position: absolute; top: 0; left: 0;
+      width: 250px; height: 100vh;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px; box-sizing: border-box;
+      display: flex; flex-direction: column;
+      z-index: 1; transition: transform 0.3s ease;
+    }
+    .sidebar-hidden { transform: translateX(-100%); }
+    .abas-container {
+      display: flex; width: 100%;
+      margin-top: auto; border-top: 1px solid #ddd;
+    }
+    .aba {
+      flex: 1; padding: 12px 0; text-align: center;
+      cursor: pointer; background: #f5f5f5;
+      transition: all 0.3s;
+    }
+    .aba.ativa { background: #fff; font-weight: bold; }
+    .conteudo-aba {
+      display: none; padding: 15px;
+      flex-grow: 1; overflow-y: auto;
+    }
+    .conteudo-aba.ativa { display: block; }
+    .piso-option {
+      width: 100%; height: 120px;
+      margin-bottom: 15px; cursor: pointer;
+      border: 2px solid transparent;
+      transition: border 0.3s; object-fit: cover;
+    }
+    .piso-option.selected { border: 2px solid #00a2ff; }
+    .color-picker-container {
+      display: flex; flex-direction: column;
+      align-items: center; width: 100%;
+    }
+    #color-picker {
+      width: 100%; height: 50px;
+      margin: 10px 0; cursor: pointer;
+    }
+    .pincel-btn {
+      background: #00a2ff; color: white;
+      border: none; padding: 12px;
+      border-radius: 4px; cursor: pointer;
+      margin: 10px 0; width: 100%;
+      transition: all 0.3s;
+    }
+    .pincel-btn.ativo { background: #ff5733; }
+    #instrucoes {
+      display: none; margin-top: 10px;
+      padding: 8px; background: #f0f0f0;
+      border-radius: 4px; text-align: center;
+      font-size: 13px;
+    }
+    #add-texture-btn {
+      background: #4CAF50;
+      margin-top: 20px;
+    }
+    #add-texture-btn:hover {
+      background: #45a049;
+    }
+    #texture-file-input {
+      display: none;
+    }
+    .tutorial-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .tutorial-content {
+      background-color: white;
+      width: 80%;
+      max-width: 800px;
+      height: 80%;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    .close-tutorial {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 30px;
+      color: #333;
+      cursor: pointer;
+      z-index: 1001;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .tutorial-carousel {
+      height: 100%;
+    }
+    .carousel-inner {
+      height: 100%;
+    }
+    .carousel-item {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: transparent;
+    }
+    .carousel-item img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+    }
+    /* CORREÇÕES PARA OS CONTROLES DO CARROSSEL */
+    .carousel-control-prev, 
+    .carousel-control-next {
+      position: absolute;
+      top: 50%;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: rgba(249, 255, 76, 0.7);
+      opacity: 0.8;
+      z-index: 100;
+      transform: translateY(-50%);
+    }
+    .carousel-control-prev { 
+      left: 15px; 
+    }
+    .carousel-control-next { 
+      right: 15px; 
+    }
+    .carousel-control-prev:hover, 
+    .carousel-control-next:hover {
+      opacity: 1;
+    }
+    .carousel-indicators {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      margin: 0;
+      z-index: 100;
+    }
+    .carousel-indicators button {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin: 0 5px;
+    }
+    /* Garantir que os ícones de controle sejam visíveis */
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      filter: invert(1) brightness(0.5);
+      width: 24px;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <button id="icone-sidebar">☰</button>
+  <button id="icone-ajuda"><i class="fa-solid fa-circle-exclamation"></i></button>
+  
+  <div id="sidebar">
+    <div id="conteudo-pisos" class="conteudo-aba ativa">
+      <h3>Selecione o Piso</h3>
+      <img src="https://placehold.co/300x200/4CAF50/white?text=Piso+1" class="piso-option selected" data-texture="piso1">
+      <img src="https://placehold.co/300x200/2196F3/white?text=Piso+2" class="piso-option" data-texture="piso2">
+      <img src="https://placehold.co/300x200/FF9800/white?text=Piso+3" class="piso-option" data-texture="piso3">
+      <img src="https://placehold.co/300x200/E91E63/white?text=Piso+4" class="piso-option" data-texture="piso4">
+      <img src="https://placehold.co/300x200/9C27B0/white?text=Piso+5" class="piso-option" data-texture="piso5">
+
+      <!-- Botão para adicionar nova textura -->
+      <button id="add-texture-btn" class="pincel-btn">
+        <i class="fas fa-plus"></i> Adicionar Textura
+      </button>
+      <input type="file" id="texture-file-input" accept="image/*" style="display: none;">
+    </div>
+
+    <div id="conteudo-cor" class="conteudo-aba">
+      <h3>Selecione a Cor</h3>
+      <div class="color-picker-container">
+        <input type="color" id="color-picker" value="#00a2ff">
+        <button id="pincel-btn" class="pincel-btn">
+          <i class="fas fa-paintbrush"></i> Pintar Parede
+        </button>
+        <div id="instrucoes">
+          Clique em qualquer parede para aplicar a cor<br>
+          Pressione ESC para cancelar
+        </div>
+      </div>
+    </div>
+
+    <div class="abas-container">
+      <div class="aba ativa" data-aba="pisos">
+        <i class="fa-regular fa-square"></i> Pisos
+      </div>
+      <div class="aba" data-aba="cor">
+        <i class="fas fa-palette"></i> Cores
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal do Tutorial -->
+  <div id="tutorial-modal" class="tutorial-modal">
+
+    <div class="tutorial-content">
+
+      <span class="close-tutorial">&times;</span>
+      <div id="tutorial-carousel" class="carousel slide tutorial-carousel" data-bs-ride="carousel">
+
+        <div class="carousel-indicators">
+
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="4" aria-label="Slide 5"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="5" aria-label="Slide 6"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="6" aria-label="Slide 7"></button>
+          <button type="button" data-bs-target="#tutorial-carousel" data-bs-slide-to="7" aria-label="Slide 8"></button>
+        </div>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="passo1P.jpeg" class="d-block w-100" alt="Passo 1 do tutorial">
+          </div>
+          <div class="carousel-item">
+            <img src="passo2P.jpeg" class="d-block w-100" alt="Passo 2 do tutorial">
+          </div>
+          <div class="carousel-item">
+            <img src="passo3P.jpeg" class="d-block w-100" alt="Passo 3 do tutorial">
+          </div>
+          <div class="carousel-item">
+            <img src="passo1C.jpeg" class="d-block w-100" alt="Passo 1 do tutorial de cores">
+          </div>
+          <div class="carousel-item">
+            <img src="passo2C.jpeg" class="d-block w-100" alt="Passo 2 do tutorial de cores">
+          </div>
+          <div class="carousel-item">
+            <img src="passo3C.jpeg" class="d-block w-100" alt="Passo 3 do tutorial de cores">
+          </div>
+          <div class="carousel-item">
+            <img src="passo4C.jpeg" class="d-block w-100" alt="Passo 4 do tutorial de cores">
+          </div>
+          <div class="carousel-item">
+            <img src="passo5C.jpeg" class="d-block w-100" alt="Passo 5 do tutorial de cores">
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#tutorial-carousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Anterior</span>
+        </button>
+        
+        <button class="carousel-control-next" type="button" data-bs-target="#tutorial-carousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Próximo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Controle do modal do tutorial
+    document.getElementById('icone-ajuda').addEventListener('click', function() {
+      document.getElementById('tutorial-modal').style.display = 'flex';
+      
+      // Inicializar o carrossel manualmente
+      const carouselElement = document.getElementById('tutorial-carousel');
+      const carousel = new bootstrap.Carousel(carouselElement, {
+        interval: false // Desativa a transição automática
+      });
+    });
+
+    document.querySelector('.close-tutorial').addEventListener('click', function() {
+      document.getElementById('tutorial-modal').style.display = 'none';
+    });
+
+    // Fechar o modal clicando fora do conteúdo
+    document.getElementById('tutorial-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.style.display = 'none';
+      }
+    });
+
+    // Fechar o modal com a tecla ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.getElementById('tutorial-modal').style.display = 'none';
+      }
+    });
+
+    // Controle da sidebar
+    document.getElementById('icone-sidebar').addEventListener('click', function() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('sidebar-hidden');
+      this.textContent = sidebar.classList.contains('sidebar-hidden') ? '☰' : '×';
+    });
+
+    // Controle das abas
+    document.querySelectorAll('.aba').forEach(aba => {
+      aba.addEventListener('click', function() {
+        // Ativar/desativar abas
+        document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
+        this.classList.add('ativa');
+        
+        // Mostrar conteúdo correspondente
+        const target = this.getAttribute('data-aba');
+        document.querySelectorAll('.conteudo-aba').forEach(conteudo => {
+          conteudo.classList.remove('ativa');
+        });
+        document.getElementById(`conteudo-${target}`).classList.add('ativa');
+      });
+    });
+
+    // Seleção de pisos
+    document.querySelectorAll('.piso-option').forEach(option => {
+      option.addEventListener('click', function() {
+        document.querySelectorAll('.piso-option').forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+      });
+    });
+
+    // Modo de pintura
+    document.getElementById('pincel-btn').addEventListener('click', function() {
+      this.classList.toggle('ativo');
+      const instrucoes = document.getElementById('instrucoes');
+      
+      if (this.classList.contains('ativo')) {
+        instrucoes.style.display = 'block';
+      } else {
+        instrucoes.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
