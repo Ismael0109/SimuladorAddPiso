@@ -39,11 +39,11 @@ const textureLoader = new THREE.TextureLoader();
 
 // Carregar texturas de piso
 let pisoTextures = {
-  piso1: textureLoader.load('/texturas/piso1.jpg'),
-  piso2: textureLoader.load('/texturas/piso2.jpg'),
-  piso3: textureLoader.load('/texturas/piso3.png'),
-  piso4: textureLoader.load('/texturas/piso4.png'),
-  piso5: textureLoader.load('/texturas/piso5.png')
+  piso1: textureLoader.load('./texturas/piso1.jpg'),
+  piso2: textureLoader.load('./texturas/piso2.jpg'),
+  piso3: textureLoader.load('./texturas/piso3.png'),
+  piso4: textureLoader.load('./texturas/piso4.png'),
+  piso5: textureLoader.load('./texturas/piso5.png')
 };
 
 //função para lidar com o carregamento de novas texturas
